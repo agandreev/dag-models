@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Set
 
 SEND = "send"
 RECEIVE = "receive"
@@ -10,7 +10,10 @@ class Transaction:
         self.time: float = time
         self.owner: 'Agent' = None
         self.weight_for_each_agent: Dict['Agent', int] = dict()
+
         self.is_mc: bool = False
+        self.mci: int = -1
+        self.last_mc: Set['Transaction'] = set()
 
         self.is_malicious = False
         self.is_fork = False

@@ -1,0 +1,12 @@
+id;is_mc;is_witness;mci;
+0;True;False;0;{4, 2, 3, 1};
+1;True;False;0;{5, 6};
+2;True;True;0;{7, 10, 8, 9};
+3;False;False;-1;set();
+4;False;False;-1;set();
+5;False;False;-1;set();
+6;False;True;-1;set();
+7;False;False;-1;set();
+8;False;True;-1;set();
+9;False;False;-1;set();
+10;False;False;-1;set();
