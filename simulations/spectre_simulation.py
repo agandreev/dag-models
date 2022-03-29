@@ -1,6 +1,7 @@
 import logging
 from typing import List
 
+from simulation_components.agents.agent import Agent
 from simulation_components.tangle import Tangle
 from simulation_components.transaction import Transaction
 from simulations.simulation import Simulation
@@ -10,6 +11,8 @@ import networkx as nx
 
 BLACK = "#000000"
 RED = "#FF0000"
+YELLOW = "#FFFF00"
+
 
 class Spectre(Simulation):
     def __init__(self,
@@ -17,16 +20,16 @@ class Spectre(Simulation):
                  agents_quantity: int,
                  transaction_rate: int,
                  network_delay: float,
-                 spectre_rate: int,
-                 validation_quantity: int):
-        if spectre_rate > transaction_rate:
-            raise Exception("Ghost rate should be > than transaction rate")
+                 validation_quantity: int,
+                 attack_time_perc: float,
+                 attack_rate: int):
         super().__init__(transactions_quantity, agents_quantity, transaction_rate, network_delay, validation_quantity)
         self.free_tips: List['Transaction'] = list()
-
-        self.spectre_rate = 1 / spectre_rate
-        self.voting_time = self.spectre_rate
         self.voices = None
+        self.malicious_agent = None
+        self.attack_time_perc = attack_time_perc
+        self.attack_rate = attack_rate
+        self.attack_tx = list()
 
     def setup(self) -> None:
         self.generate_agents()
@@ -41,6 +44,24 @@ class Spectre(Simulation):
         # Initializing owner for each transaction except genesis
         for transaction in self.dag.transactions[1:]:
             transaction.owner = np.random.choice(self.agents)
+
+        self.malicious_agent = Agent(len(self.agents))
+        self.agents.append(self.malicious_agent)
+        self.malicious_agent.color = YELLOW
+        time = 0
+        for transaction in self.dag.transactions:
+            if transaction.id / self.transactions_quantity > self.attack_time_perc:
+                time = transaction.time
+                break
+        arrival_times = np.random.exponential(1 / self.transaction_rate, 2)
+        for i in range(2):
+            time += arrival_times[i]
+            tx = Transaction(len(self.dag.transactions), time)
+            tx.owner = self.malicious_agent
+            self.dag.transactions.append(tx)
+            self.attack_tx.append(tx)
+
+        self.dag.transactions.sort(key=lambda tx: tx.time)
 
     def run(self) -> None:
         current_time = time.process_time()
@@ -62,9 +83,20 @@ class Spectre(Simulation):
 
         self.final_time = time.process_time() - current_time
         print(self.final_time)
-        # self.voices = self._voting()
-        # print(self.voices)
-        # print(len(self.voices))
+        self.voices = self._voting()
+        print(self.voices)
+
+        first = 0
+        second = 0
+        for k, v in self.voices.items():
+            if v[(self.attack_tx[0].id, self.attack_tx[1].id)] == 1:
+                first += 1
+            if v[(self.attack_tx[0].id, self.attack_tx[1].id)] == -1:
+                second += 1
+
+        print(first / (first + second))
+        print(second / (first + second))
+        self._review(self.voices)
 
     def _urtc_selection(self, transaction: 'Transaction', n: int) -> None:
         self._get_existing_transactions_for_agent(transaction)
@@ -128,8 +160,8 @@ class Spectre(Simulation):
         #
         #             self._init_voting(voices, x_transaction, y_transaction)
 
-        x_transaction = self.dag.transactions[3]
-        y_transaction = self.dag.transactions[30]
+        x_transaction = self.attack_tx[0]
+        y_transaction = self.attack_tx[1]
 
         self._init_voting(voices, x_transaction, y_transaction)
 
@@ -148,7 +180,6 @@ class Spectre(Simulation):
         self._rec_easy_vote(voices, x, x, y)
         self._rec_easy_vote(voices, y, x, y)
 
-        print(voices)
         tips = list()
         for t in list(nx.ancestors(self.dag.tangle, self.dag.transactions[0])):
             if len(list(self.dag.tangle.predecessors(t))) == 0:
@@ -202,7 +233,8 @@ class Spectre(Simulation):
                 if len(preds) <= 1:
                     continue
                 for p in preds:
-                    if p == z or (z not in nx.ancestors(self.dag.tangle, x) and z not in nx.ancestors(self.dag.tangle, y)):
+                    if p == z or (
+                            z not in nx.ancestors(self.dag.tangle, x) and z not in nx.ancestors(self.dag.tangle, y)):
                         continue
                     if p in rec_id:
                         break
@@ -222,3 +254,21 @@ class Spectre(Simulation):
                 continue
             voices[z.id] = {(x.id, y.id): 0}
         voices[z.id] = {(x.id, y.id): 0}
+
+    def _review(self, voting):
+        file = open("review.csv", "w")
+        file.close()
+        file = open("review.csv", "a")
+        file.write("id;vote;\n")
+
+        first = 0
+        second = 0
+        for k, v in self.voices.items():
+            transaction_info = f"{k};{v[(self.attack_tx[0].id, self.attack_tx[1].id)]};\n"
+            file.write(transaction_info)
+            if v[(self.attack_tx[0].id, self.attack_tx[1].id)] == 1:
+                first += 1
+            if v[(self.attack_tx[0].id, self.attack_tx[1].id)] == -1:
+                second += 1
+        file.write(f"\n{first/(first+second)};{second/(first+second)};")
+        file.close()

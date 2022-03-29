@@ -17,10 +17,11 @@ class GhostSimulation(Simulation):
                  agents_quantity: int,
                  transaction_rate: int,
                  network_delay: float,
-                 ghost_rate: int):
+                 ghost_rate: int,
+                 validation_quantity: int):
         if ghost_rate > transaction_rate:
             raise Exception("Ghost rate should be > than transaction rate")
-        super().__init__(transactions_quantity, agents_quantity, transaction_rate, network_delay)
+        super().__init__(transactions_quantity, agents_quantity, transaction_rate, network_delay, validation_quantity)
         self.free_tips: List['Transaction'] = list()
         self.ghost_rate = 1 / ghost_rate
         self.update_mc_time = self.ghost_rate

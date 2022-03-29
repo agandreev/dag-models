@@ -98,6 +98,16 @@ class Nano(Simulation):
 
         self.round.generate_representative_delay_matrix(self.repr_quantity)
 
+        file = open("review.csv", "w")
+        file.write("agent_id;agent_repr_id;\n")
+        for agent in self.agents:
+            if agent.is_repr:
+                continue
+            file.write(f"{agent.id};{agent.repr.id};\n")
+            print(f"agent {agent.id} repr's: {agent.repr.id}")
+        print()
+        file.close()
+
     def run(self) -> None:
         current_time = time.process_time()
 
@@ -124,12 +134,6 @@ class Nano(Simulation):
 
         self.final_time = time.process_time() - current_time
         print(self.final_time)
-
-        for agent in self.agents:
-            if agent.is_repr:
-                continue
-            print(f"agent {agent.id} repr's: {agent.repr.id}")
-        print()
 
         # print(self.get_balance(self.dag.transactions[len(self.dag.transactions) - 1].owner, self.dag.transactions[len(self.dag.transactions) - 1]))
         # for tx in self.dag.transactions[len(self.dag.transactions) - 1].owner.recent_txs:
@@ -178,6 +182,10 @@ class Nano(Simulation):
         return [RED if u.is_mc and v.is_mc else BLACK for u, v in edges]
 
     def start_voting(self, first_tx, second_tx):
+        file = open("review.csv", "a")
+        file.write("id;votes;\n")
+        file.close()
+
         self.update_balances()
         voting = dict()
         for round_i in range(self.rounds_quantity):
@@ -187,7 +195,7 @@ class Nano(Simulation):
                         break
                     voting[agent_i] = self._first_vote(self.agents[agent_i], first_tx, second_tx)
             self._compare_votes(voting)
-        print(voting)
+            self._review(voting)
 
     def _first_vote(self, repr: 'Agent', first_tx, second_tx):
         self._update_repr_balance(repr)
@@ -260,6 +268,12 @@ class Nano(Simulation):
         for agent in self.agents:
             if agent.repr == repr:
                 repr.repr_balance += agent.total
+
+    def _review(self, votes):
+        file = open("review.csv", "a")
+        for k, v in votes.items():
+            file.write(f"{k};{v};\n")
+        file.close()
 
 
 def sort_by_time(tx: 'Transaction'):
