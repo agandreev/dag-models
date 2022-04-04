@@ -278,7 +278,7 @@ def _run_nano():
         return
 
     simulation = Nano(int(t_quantity.get()), int(a_quantity.get()), int(t_rate.get()),
-                      float(n_delay.get()), int(v_quantity.get()), int(r_gap.get()),
+                      float(n_delay.get()), int(v_quantity.get()), float(r_gap.get()),
                       int(repr_quantity.get()), float(s_time.get()), int(round_quantity.get()),
                       float(round_duration.get()), float(repr_delay.get()))
 
@@ -371,12 +371,12 @@ def _run():
 
 def _run_byteball():
     if not (_check_fields(t_quantity) and _check_fields(a_quantity) and _check_fields(t_rate)
-            and _check_fields(n_delay) and _check_fields(w_quantity) \
-            and _check_fields(v_quantity) and _check_fields(a_type)):
+            and _check_fields(n_delay) and _check_fields(w_quantity)
+            and _check_fields(v_quantity)):
         return
 
     attack = None
-    if str(a_type) != "None":
+    if str(a_type.get()) != "None":
         if not (_check_fields(s_time) and _check_fields(a_rate)):
             return
         attack = Byteball_attack(DOUBLE, float(s_time.get()), float(a_rate.get()))
@@ -475,6 +475,7 @@ def _run_sim(simulation):
 
 
 def _check_fields(field) -> bool:
+    print(field.get())
     if len(field.get()) == 0:
         tkinter.messagebox.showinfo(title="Warning", message="All fields should be filled!")
         return False

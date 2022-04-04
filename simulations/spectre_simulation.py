@@ -53,7 +53,7 @@ class Spectre(Simulation):
             if transaction.id / self.transactions_quantity > self.attack_time_perc:
                 time = transaction.time
                 break
-        arrival_times = np.random.exponential(1 / self.transaction_rate, 2)
+        arrival_times = np.random.exponential(1 / self.attack_rate, 2)
         for i in range(2):
             time += arrival_times[i]
             tx = Transaction(len(self.dag.transactions), time)
